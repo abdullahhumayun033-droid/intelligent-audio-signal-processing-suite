@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CM3065 Audio CAPTCHA & Visualiser</title>
+  <style>
+    body {
+      /* Keep the page simple and readable: dark theme + centered layout */
+      padding: 0;
+      margin: 20px;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #222;
+      color: white;
+      text-align: center;
+    }
+    
+    #canvas-container {
+      /* This is the “stage” where the p5 canvas gets attached */
+      position: relative;
+      margin: 0 auto;
+      width: 800px;
+      height: 600px;
+      border: 2px solid #555;
+      box-shadow: 0 0 20px rgba(0,0,0,0.8);
+      background-color: #000;
+    }
+
+    /* Style for p5 DOM elements so the UI doesn’t look like raw defaults */
+    button {
+      cursor: pointer;
+      font-weight: bold;
+      border-radius: 4px;
+      border: none;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+    }
+    button:hover { filter: brightness(1.2); }
+    
+    input {
+      /* Basic input styling so text boxes match the buttons */
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+  </style>
+
+  <!-- 1) p5.js core: canvas + draw loop + core utilities -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+
+  <!-- 2) p5.sound: audio playback + noise generator + sound utilities -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
+
+  <!-- 3) p5.speech: speech recognition + text-to-speech for the CAPTCHA flow -->
+  <script src="https://cdn.jsdelivr.net/gh/IDMNYU/p5.js-speech@0.0.3/lib/p5.speech.js"></script>
+
+  <!-- 4) Meyda: real-time audio feature extraction (RMS, centroid, etc.) for the visualizer -->
+  <script src="https://unpkg.com/meyda/dist/web/meyda.min.js"></script>
+
+  <!-- 5) Main app logic (all state + UI + rendering lives in sketch.js) -->
+  <script src="sketch.js"></script>
+</head>
+
+<body>
+  <!-- Simple heading so it’s obvious what’s being demonstrated -->
+  <h2>Exercise 2: Captcha & Visualizer</h2>
+
+  <!-- p5 canvas is attached into this container from sketch.js -->
+  <div id="canvas-container"></div>
+
+  <!-- Status text gets updated live from sketch.js -->
+  <p>Status: <span id="status">Loading...</span></p>
+</body>
+</html>

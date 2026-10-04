@@ -1,0 +1,18 @@
+Language,File,Reference,Hypothesis,WER_%,S,D,I,N
+english,checkin.wav,where is the check in desk,where is the check in desk,0.0,0,0,0,6
+english,parents.wav,i have lost my parents,i lost my therapist,40.0,1,1,0,5
+english,suitcase.wav,please i have lost my suitcase,police have lost my suitcase,33.3,1,1,0,6
+english,what_time.wav,what time is my plane,what time is my life,20.0,1,0,0,5
+english,where.wav,where are the restaurants and shops,where are the restaurants and shops,0.0,0,0,0,6
+english,your_sentence1.wav,I love my pets,i love my bags,25.0,1,0,0,4
+english,your_sentence2.wav,Hello testing 1..2..3 this is a clear recording for my project,hello testing one two three this is a clear recording from my project,36.4,2,0,2,11
+italian,checkin_it.wav,dove è il bancone,dove è il bancone,0.0,0,0,0,4
+italian,parents_it.wav,ho perso i miei genitori,ho perso i miei genitori,0.0,0,0,0,5
+italian,suitcase_it.wav,per favore ho perso la mia valigia,per favore ho perso la mia valigia,0.0,0,0,0,7
+italian,what_time_it.wav,a che ora è il mio aereo,a che ora è il mio aereo,0.0,0,0,0,7
+italian,where_it.wav,dove sono i ristoranti e i negozi,dove sono i ristoranti e i negozi,0.0,0,0,0,7
+spanish,checkin_es.wav,dónde están los mostradores,dónde están los mostradores,0.0,0,0,0,4
+spanish,parents_es.wav,he perdido a mis padres,he perdido a mis padres,0.0,0,0,0,5
+spanish,suitcase_es.wav,por favor he perdido mi maleta,por favor he perdido mi maletas,16.7,1,0,0,6
+spanish,what_time_es.wav,a qué hora es mi avión,qué hora es diario,50.0,1,2,0,6
+spanish,where_es.wav,dónde están los restaurantes y las tiendas,dónde están los restaurantes las tiempo,28.6,1,1,0,7

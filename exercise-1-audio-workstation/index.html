@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CM3065 Audio Workstation</title>
+
+  <!-- p5 core (canvas + drawing + app lifecycle) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+
+  <!-- p5.sound addon (SoundFile, effects, FFT, recording, etc.) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
+
+  <style>
+    :root{
+      /* Basic theme variables so I can tweak the look quickly in one place */
+      --bg: #e6e6e6;
+      --panel: #efefef;
+      --stroke: #2a2a2a;
+      --btn: #1e556f;
+      --btnText: #fff;
+      --btnSoft: #ead7cc;
+    }
+
+    body{
+      /* Simple, clean “worksheet” vibe: light background + centered content */
+      margin:0;
+      padding:18px;
+      background: var(--bg);
+      font-family: Arial, sans-serif;
+      color:#111;
+    }
+
+    .header{
+      /* Big label at the top so it looks like a coursework deliverable */
+      text-align:center;
+      font-weight:900;
+      font-size: 22px;
+      margin-bottom: 12px;
+    }
+
+    .layout{
+      /* Two-column layout: library on the left, controls + spectrum on the right */
+      width: 1180px;
+      max-width: 100%;
+      margin: 0 auto;
+      display:grid;
+      grid-template-columns: 360px 1fr;
+      gap: 16px;
+      align-items:start;
+    }
+
+    .outerPanel{
+      /* “Card” panels with thick border to match the coursework UI style */
+      background: var(--panel);
+      border: 3px solid var(--stroke);
+      border-radius: 20px;
+      padding: 14px;
+      box-sizing: border-box;
+    }
+
+    .libTitle{
+      /* Title for the left panel */
+      text-align:center;
+      font-weight:900;
+      font-size: 18px;
+      margin: 8px 0 10px 0;
+      line-height: 1.1;
+    }
+
+    .soundGrid{
+      /* Buttons for Sound 1–6 */
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 10px;
+    }
+
+    .soundBtn{
+      /* Primary “slot” buttons */
+      border: 3px solid var(--stroke);
+      border-radius: 14px;
+      padding: 16px 10px;
+      background: #f8f8f8;
+      font-weight: 900;
+      cursor:pointer;
+    }
+    .soundBtn.active{
+      /* Visual cue for the currently loaded slot */
+      outline: 4px solid #2e6c96;
+      outline-offset: 0;
+      background:#ffffff;
+    }
+
+    .bigList{
+      /* Scrollable library area that lists all slots and their status */
+      margin-top: 14px;
+      height: 320px;
+      border: 3px solid var(--stroke);
+      border-radius: 14px;
+      background:#f8f8f8;
+      overflow:auto;
+      padding: 10px;
+      box-sizing:border-box;
+      font-size: 13px;
+      position: relative;
+    }
+
+    .importHint{
+      /* Sticky helper label at the top of the library list */
+      position: sticky;
+      top: 0;
+      background:#f8f8f8;
+      padding: 6px 8px;
+      font-weight: 900;
+      border-bottom: 1px solid #ddd;
+      margin: -10px -10px 10px -10px;
+    }
+
+    .libRow{
+      /* One row per slot in the library list */
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      padding: 8px 8px;
+      border-bottom: 1px solid #ddd;
+      cursor:pointer;
+      border-radius: 10px;
+    }
+    .libRow:last-child{ border-bottom:none; }
+    .libRow.selected{ background: #eaf4ff; } /* shows which row I clicked */
+
+    .libName{
+      /* Slot title (“SOUND1”, etc.) */
+      font-weight: 900;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      max-width: 240px;
+    }
+
+    .libTag{
+      /* Small metadata: preset/imported/recorded + filename + filters saved */
+      font-size: 12px;
+      color:#333;
+      font-weight:700;
+      opacity:0.85;
+    }
+
+    .libActions{
+      /* Edit / Delete / Record New row */
+      display:flex;
+      gap: 14px;
+      margin-top: 14px;
+      justify-content:space-between;
+    }
+
+    .softBtn{
+      /* Softer style buttons to match the left library theme */
+      flex:1;
+      border: 3px solid var(--stroke);
+      border-radius: 14px;
+      padding: 14px 10px;
+      background: var(--btnSoft);
+      font-weight: 900;
+      cursor:pointer;
+    }
+
+    .dwolNote{
+      /* Quick legend for the effect controls */
+      text-align:center;
+      margin-top: 12px;
+      font-weight: 800;
+      color:#333;
+      opacity:0.9;
+    }
+
+    .topRow{
+      /* Top row on the right: labels for the two spectrums */
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .specBox{
+      /* The labels above the canvas area */
+      border: 3px solid var(--stroke);
+      border-radius: 16px;
+      background:#f1f1f1;
+      height: 110px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight: 900;
+      font-size: 18px;
+    }
+
+    .canvasWrap{
+      /* Holds the p5 canvas (inserted into <main>) */
+      margin-top: 12px;
+      border: 3px solid var(--stroke);
+      border-radius: 16px;
+      background:#ffffff;
+      padding: 8px;
+      box-sizing:border-box;
+    }
+
+    .controlRow{
+      /* Playback controls + master volume */
+      margin-top: 14px;
+      display:flex;
+      gap: 14px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    .mainBtn{
+      /* Strong “primary action” buttons for playback */
+      border: 3px solid var(--stroke);
+      border-radius: 14px;
+      padding: 14px 18px;
+      background: var(--btn);
+      color: var(--btnText);
+      font-weight: 900;
+      cursor:pointer;
+    }
+
+    .masterBox{
+      /* Master volume control is pushed to the right with margin-left:auto */
+      margin-left:auto;
+      border: 3px solid var(--stroke);
+      border-radius: 16px;
+      background:#f1f1f1;
+      padding: 10px 14px;
+      display:flex;
+      gap: 12px;
+      align-items:center;
+      min-width: 320px;
+      box-sizing:border-box;
+    }
+    .masterBox label{
+      font-weight: 900;
+      font-size: 18px;
+      white-space:nowrap;
+    }
+    .masterBox input[type="range"]{
+      width: 180px;
+    }
+
+    .recordRow{
+      /* Recording source radio buttons + status text */
+      margin-top: 12px;
+      display:flex;
+      gap: 12px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .recMode{
+      /* “Microphone / Computer Audio” selector */
+      border: 3px solid var(--stroke);
+      border-radius: 14px;
+      background:#f8f8f8;
+      padding: 10px 12px;
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      font-weight: 900;
+    }
+
+    #status{
+      /* Small status label used by sketch.js to show feedback */
+      margin-top: 0;
+      font-size: 13px;
+      font-weight: 800;
+      color:#333;
+      min-height: 18px;
+    }
+
+    .effectsOuter{
+      /* Effects panel container */
+      margin-top: 18px;
+      border: 3px solid var(--stroke);
+      border-radius: 20px;
+      background:#f1f1f1;
+      padding: 12px;
+    }
+    .effectsTitle{
+      /* Effects panel title */
+      text-align:center;
+      font-weight: 900;
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+
+    .effectsGrid{
+      /* Two-column grid of effect cards */
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .effectCard{
+      /* Each effect is a separate card */
+      border: 3px solid var(--stroke);
+      border-radius: 16px;
+      background:#ffffff;
+      padding: 10px 12px;
+      box-sizing:border-box;
+    }
+    .effectCard h3{
+      /* Effect card title */
+      margin: 2px 0 10px 0;
+      text-align:center;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .rows{
+      /* “Dot | Label | Control” grid for consistent alignment */
+      display:grid;
+      grid-template-columns: 22px 1fr auto;
+      gap: 10px 12px;
+      align-items:center;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .dot{
+      /* Decorative marker so each control row reads clearly */
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 3px solid var(--stroke);
+      background:#1e556f;
+    }
+
+    /* Make sliders visually match the app accent */
+    input[type="range"]{ accent-color: #2e6c96; }
+
+    select{
+      /* Styled select to match the rest of the controls */
+      width: 100%;
+      border: 3px solid var(--stroke);
+      border-radius: 12px;
+      padding: 8px;
+      font-weight: 800;
+      background:#f8f8f8;
+    }
+
+    .bottomRow{
+      /* Clear filters + Save row */
+      margin-top: 14px;
+      display:flex;
+      gap: 14px;
+      justify-content:space-between;
+    }
+    .bottomBtn{
+      flex:1;
+      border: 3px solid var(--stroke);
+      border-radius: 14px;
+      padding: 12px 10px;
+      background: var(--btnSoft);
+      font-weight: 900;
+      cursor:pointer;
+    }
+
+    /* Hidden file input */
+    /* This exists if I ever want a static HTML file picker. In this build, sketch.js also injects one dynamically. */
+    #filePicker{ display:none; }
+  </style>
+</head>
+
+<body>
+  <!-- Simple title header so it’s obvious what this page is -->
+  <div class="header">Exercise 1 – Web-based Audio Processor (p5.js + p5.sound)</div>
+
+  <div class="layout">
+
+    <!-- LEFT: Pre-recorded Sounds Library -->
+    <div class="outerPanel">
+      <div class="libTitle">Pre-recorded<br/>Sounds Library</div>
+
+      <!-- Sound slot buttons (these map directly to Sound 1–6 in sketch.js) -->
+      <div class="soundGrid">
+        <button class="soundBtn" id="sound1Btn">Sound 1</button>
+        <button class="soundBtn" id="sound2Btn">Sound 2</button>
+        <button class="soundBtn" id="sound3Btn">Sound 3</button>
+        <button class="soundBtn" id="sound4Btn">Sound 4</button>
+        <button class="soundBtn" id="sound5Btn">Sound 5</button>
+        <button class="soundBtn" id="sound6Btn">Sound 6</button>
+      </div>
+
+      <!-- Library list: sketch.js fills this with the current state of each slot -->
+      <div class="bigList" id="libraryList">
+        <div class="importHint">Click here to Import an audio file into the selected Sound slot</div>
+      </div>
+
+      <!-- Library actions: Edit loads the selected slot, Delete resets it, Record New captures mic/system audio -->
+      <div class="libActions">
+        <button class="softBtn" id="editBtn">Edit</button>
+        <button class="softBtn" id="deleteBtn">Delete</button>
+        <button class="softBtn" id="recordNewBtn">Record<br/>New</button>
+      </div>
+
+      <!-- Quick legend so the abbreviations in the panel don’t look mysterious -->
+      <div class="dwolNote">D:W: Dry/Wet &nbsp;&nbsp;&nbsp; OL: Output level</div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="outerPanel">
+
+      <!-- Just visual labels (the actual spectrum bars are drawn in the p5 canvas) -->
+      <div class="topRow">
+        <div class="specBox">Spectrum In</div>
+        <div class="specBox">Spectrum Out</div>
+      </div>
+
+      <!-- p5 canvas is injected into <main> by sketch.js -->
+      <div class="canvasWrap">
+        <main></main>
+      </div>
+
+      <!-- Playback controls + master volume -->
+      <div class="controlRow">
+        <button class="mainBtn" id="playPauseBtn">Play \ Pause</button>
+        <button class="mainBtn" id="stopBtn">Stop</button>
+        <button class="mainBtn" id="loopBtn">Loop</button>
+        <button class="mainBtn" id="skipBtn">Skip to start</button>
+
+        <div class="masterBox">
+          <label>Master Volume</label>
+          <input id="masterVol" type="range" min="0" max="1" step="0.01" value="0.8">
+        </div>
+      </div>
+
+      <!-- Record source picker + status messages -->
+      <div class="recordRow">
+        <div class="recMode">
+          Record Source:
+          <label><input type="radio" name="recSrc" id="recMic" checked> Microphone</label>
+          <label><input type="radio" name="recSrc" id="recSystem"> Computer Audio</label>
+        </div>
+        <div id="status"></div>
+      </div>
+
+      <!-- Effects panel (these controls drive the p5.sound effects chain in sketch.js) -->
+      <div class="effectsOuter">
+        <div class="effectsTitle">Recording Effects Panel</div>
+
+        <div class="effectsGrid">
+          <div class="effectCard">
+            <h3>Low-pass filter effect</h3>
+            <div class="rows">
+              <div class="dot"></div><div>Cutoff frequency</div><input id="lpCut" type="range" min="50" max="12000" step="1" value="2500">
+              <div class="dot"></div><div>Resonance</div><input id="lpRes" type="range" min="0.1" max="20" step="0.1" value="1.2">
+              <div></div><div><b>DW</b></div><input id="lpDW" type="range" min="0" max="1" step="0.01" value="0.7">
+              <div></div><div><b>OL</b></div><input id="lpOL" type="range" min="0" max="1.5" step="0.01" value="1.0">
+            </div>
+          </div>
+
+          <div class="effectCard">
+            <h3>Reverb filter effect</h3>
+            <div class="rows">
+              <div class="dot"></div><div>Reverb Duration</div><input id="rvDur" type="range" min="0" max="10" step="0.01" value="2.5">
+              <div class="dot"></div><div>Decay Rate</div><input id="rvDecay" type="range" min="0" max="10" step="0.01" value="3.0">
+              <div class="dot"></div><div>Reverse</div><input id="rvRev" type="checkbox">
+              <div></div><div><b>DW</b></div><input id="rvDW" type="range" min="0" max="1" step="0.01" value="0.35">
+              <div></div><div><b>OL</b></div><input id="rvOL" type="range" min="0" max="1.5" step="0.01" value="1.0">
+            </div>
+          </div>
+
+          <div class="effectCard">
+            <h3>Dynamic compressor</h3>
+            <div class="rows">
+              <div class="dot"></div><div>Attack</div><input id="cpAtk" type="range" min="0.001" max="0.3" step="0.001" value="0.02">
+              <div class="dot"></div><div>Knee</div><input id="cpKnee" type="range" min="0" max="40" step="0.1" value="10">
+              <div class="dot"></div><div>Release</div><input id="cpRel" type="range" min="0.01" max="1.0" step="0.01" value="0.25">
+              <div class="dot"></div><div>Ratio</div><input id="cpRatio" type="range" min="1" max="20" step="0.1" value="4">
+              <div class="dot"></div><div>Threshold</div><input id="cpThr" type="range" min="-60" max="0" step="0.5" value="-18">
+              <div></div><div><b>DW</b></div><input id="cpDW" type="range" min="0" max="1" step="0.01" value="1.0">
+              <div></div><div><b>OL</b></div><input id="cpOL" type="range" min="0" max="1.5" step="0.01" value="1.0">
+            </div>
+          </div>
+
+          <div class="effectCard">
+            <h3>Waveshaper distortion</h3>
+            <div class="rows">
+              <div class="dot"></div><div>Distortion Amount</div><input id="dsAmt" type="range" min="0" max="1" step="0.01" value="0.2">
+              <div class="dot"></div><div>Oversample</div>
+              <select id="dsOver">
+                <option value="none">none</option>
+                <option value="2x">2x</option>
+                <option value="4x">4x</option>
+              </select>
+              <div></div><div><b>DW</b></div><input id="dsDW" type="range" min="0" max="1" step="0.01" value="0.6">
+              <div></div><div><b>OL</b></div><input id="dsOL" type="range" min="0" max="1.5" step="0.01" value="1.0">
+            </div>
+          </div>
+        </div>
+
+        <!-- Utility buttons: reset to defaults, or persist current settings into the selected slot -->
+        <div class="bottomRow">
+          <button class="bottomBtn" id="clearBtn">Clear filters</button>
+          <button class="bottomBtn" id="saveBtn">Save</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- This input is kept hidden on purpose. If needed, sketch.js can trigger it (or inject its own). -->
+  <input id="filePicker" type="file" accept="audio/*"/>
+
+  <!-- Main app logic (p5 sketch) -->
+  <script src="sketch.js"></script>
+</body>
+</html>
